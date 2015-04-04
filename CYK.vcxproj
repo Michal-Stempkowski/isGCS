@@ -158,6 +158,9 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     <CudaCompile Include="kernel.cu" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="cuda_helper.h" />
+    <ClInclude Include="cyk_common.h" />
+    <ClInclude Include="cyk_rules_table.h" />
     <ClInclude Include="cyk_table.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
