@@ -6,10 +6,10 @@
 #include <iostream>
 #include <vector>
 
-#include "cyk_table.h"
-//#include "cyk_rules_table.h"
+#include "cuda_helper.h"
 
-using namespace std;
+#include "cyk_table.h"
+#include "cyk_rules_table.h"
 
 cudaError_t addWithCuda(int *c, const int *a, const int *b, unsigned int size);
 
@@ -40,7 +40,7 @@ int test_cuda_basic()
 	cudaDeviceProp deviceProp;
 	cudaGetDeviceProperties(&deviceProp, 0);
 
-	cout << deviceProp.warpSize << endl;
+	std::cout << deviceProp.warpSize << std::endl;
 
 	// Add vectors in parallel.
 	cudaError_t cudaStatus = addWithCuda(c, a, b, arraySize);
@@ -65,9 +65,14 @@ int test_cuda_basic()
 
 int main()
 {
-	return 
+	auto result = 
 		test_cuda_basic() ||
 		test_cyk_second_row_filling();
+
+	std::cout << "enter to exit" << std::endl;
+	std::cin.ignore();
+
+	return result;
 }
 
 // Helper function for using CUDA to add vectors in parallel.
@@ -89,86 +94,39 @@ cudaError_t addWithCuda(int *c, const int *a, const int *b, unsigned int size)
         goto Error;
     }
 
+	device_malloc<cyk_table<4, 10>>(&dev_table, AT);
+	device_memcpy<cyk_table<4, 10>>(dev_table, &table, AT);
 
-	cudaStatus = cudaMalloc((void**)&dev_table, sizeof(cyk_table<4, 10>));
-	if (cudaStatus != cudaSuccess) {
-		fprintf(stderr, "cudaMalloc failed on cyk_table!");
-		goto Error;
-	}
+	device_malloc<int>(&dev_a, AT, size * sizeof(int));
+	device_malloc<int>(&dev_b, AT, size * sizeof(int));
+	device_malloc<int>(&dev_c, AT, size * sizeof(int));
 
-	cudaStatus = cudaMemcpy(dev_table, &table, sizeof(cyk_table<4, 10>), cudaMemcpyHostToDevice);
-	if (cudaStatus != cudaSuccess) {
-		fprintf(stderr, "cudaMemcpy failed!");
-		goto Error;
-	}
-
-    // Allocate GPU buffers for three vectors (two input, one output)    .
-    cudaStatus = cudaMalloc((void**)&dev_c, size * sizeof(int));
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMalloc failed!");
-        goto Error;
-    }
-
-    cudaStatus = cudaMalloc((void**)&dev_a, size * sizeof(int));
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMalloc failed!");
-        goto Error;
-    }
-
-    cudaStatus = cudaMalloc((void**)&dev_b, size * sizeof(int));
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMalloc failed!");
-        goto Error;
-    }
 
     // Copy input vectors from host memory to GPU buffers.
-    cudaStatus = cudaMemcpy(dev_a, a, size * sizeof(int), cudaMemcpyHostToDevice);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
-        goto Error;
-    }
 
-    cudaStatus = cudaMemcpy(dev_b, b, size * sizeof(int), cudaMemcpyHostToDevice);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
-        goto Error;
-    }
+	device_memcpy<int>(dev_a, a, AT, size * sizeof(int));
+	device_memcpy<int>(dev_b, b, AT, size * sizeof(int));
 
-    // Launch a kernel on the GPU with one thread for each element.
-    //addKernel<<< 1, size >>>(dev_c, dev_a, dev_b);
 	cykKernel << < 1, size >> >(dev_c, dev_table);
 
+	//INNER_LAUNCH_KERNEL(cykKernel, 1, size, dev_c, dev_table);
+
     // Check for any errors launching the kernel
-    cudaStatus = cudaGetLastError();
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "addKernel launch failed: %s\n", cudaGetErrorString(cudaStatus));
-        goto Error;
-    }
+	check_for_errors_after_launch(AT);
     
     // cudaDeviceSynchronize waits for the kernel to finish, and returns
     // any errors encountered during the launch.
-    cudaStatus = cudaDeviceSynchronize();
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaDeviceSynchronize returned error code %d after launching addKernel!\n", cudaStatus);
-        goto Error;
-    }
+	device_synchronize(AT);
 
     // Copy output vector from GPU buffer to host memory.
-    cudaStatus = cudaMemcpy(c, dev_c, size * sizeof(int), cudaMemcpyDeviceToHost);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
-        goto Error;
-    }
+	host_memcpy(c, dev_c, AT, size * sizeof(int));
 
-	cout << c[0] << endl;
+	std::cout << c[0] << std::endl;
 
 Error:
     cudaFree(dev_c);
     cudaFree(dev_a);
     cudaFree(dev_b);
-
-	cout << "enter to exit" << endl;
-	cin.ignore();
     
     return cudaStatus;
 }

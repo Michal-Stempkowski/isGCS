@@ -17,14 +17,15 @@ private:
 	int rules[max_rules_length][max_rules_length];
 };
 
-template <int max_rules_length>
-CCM cyk_rules_table::cyk_rules_table(int size_, int** rules_table) :
-size(size_), rules(rules_table)
+#define CYK_RULES_TABLE(type) template <int max_rules_length> CCM type cyk_rules_table<max_rules_length>::
+
+CYK_RULES_TABLE(NOTHING) cyk_rules_table(int size_, int** rules_table) :
+	size(size_)
 {
+	std::copy(rules_table, rules_table + max_rules_length * max_rules_length, rules);
 }
 
-template <int max_rules_length>
-CCM cyk_rules_table::~cyk_rules_table()
+CYK_RULES_TABLE(NOTHING) ~cyk_rules_table()
 {
 }
 

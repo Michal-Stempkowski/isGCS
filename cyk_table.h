@@ -1,4 +1,5 @@
 #include "cuda_helper.h"
+#include "cyk_common.h"
 
 #ifndef CYK_TABLE_H
 #define CYK_TABLE_H
@@ -32,17 +33,15 @@ private:
 	int table[sentence_length][sentence_length][max_symbol_length + special_field::enum_size];
 };
 
-template <int sentence_length, int max_symbol_length>
-CCM void cyk_table<sentence_length, max_symbol_length>::
-assign_rule(int row, int col, int rule)
+#define CYK_TABLE(type) template <int sentence_length, int max_symbol_length> CCM type cyk_table<sentence_length, max_symbol_length>::
+
+CYK_TABLE(void) assign_rule(int row, int col, int rule)
 {
 	*last_symbol(row, col) = rule;
 	++table[row][col][special_field::symbol_count];
 }
 
-template <int sentence_length, int max_symbol_length>
-CCM void cyk_table<sentence_length, max_symbol_length>::
-assign_rule_if_possible(int** rules_table, int left_symbol, int right_symbol, int current_row, int current_col)
+CYK_TABLE(void) assign_rule_if_possible(int** rules_table, int left_symbol, int right_symbol, int current_row, int current_col)
 {
 	auto rule = rules_table[left_symbol][rightSymbol];
 
@@ -52,9 +51,7 @@ assign_rule_if_possible(int** rules_table, int left_symbol, int right_symbol, in
 	}
 }
 
-template <int sentence_length, int max_symbol_length>
-CCM void cyk_table<sentence_length, max_symbol_length>::
-assign_rules_for_two_cell_combination(int offset, int current_row, int current_col, int** rules_table)
+CYK_TABLE(void) assign_rules_for_two_cell_combination(int offset, int current_row, int current_col, int** rules_table)
 {
 	for (
 		int* left_symbol = first_symbol(offset, current_col);
@@ -74,9 +71,7 @@ assign_rules_for_two_cell_combination(int offset, int current_row, int current_c
 	}
 }
 
-template <int sentence_length, int max_symbol_length>
-CCM cyk_table<sentence_length, max_symbol_length>::
-cyk_table()
+CYK_TABLE(NOTHING) cyk_table()
 {
 	static_assert(sentence_length > 0 && max_symbol_length > 0,
 		"sentence_length and max_symbol_length must be greater than 0");
@@ -90,44 +85,32 @@ cyk_table()
 	}
 }
 
-template <int sentence_length, int max_symbol_length>
-CCM cyk_table<sentence_length, max_symbol_length>::
-~cyk_table()
+CYK_TABLE(NOTHING) ~cyk_table()
 {
 	
 }
 
-template <int sentence_length, int max_symbol_length>
-CCM int cyk_table<sentence_length, max_symbol_length>::
-size() const
+CYK_TABLE(int) size() const
 {
 	return sentence_length;
 }
 
-template <int sentence_length, int max_symbol_length>
-CCM int* cyk_table<sentence_length, max_symbol_length>::
-first_symbol(int row, int col)
+CYK_TABLE(int*) first_symbol(int row, int col)
 {
 	return table[row][col] + special_field::enum_size;
 }
 
-template <int sentence_length, int max_symbol_length>
-CCM int* cyk_table<sentence_length, max_symbol_length>::
-last_symbol(int row, int col)
+CYK_TABLE(int*) last_symbol(int row, int col)
 {
 	return table[row][col] + special_field::enum_size + table[row][col][special_field::symbol_count];
 }
 
-template <int sentence_length, int max_symbol_length>
-CCM int cyk_table<sentence_length, max_symbol_length>::
-max_num_of_symbols() const
+CYK_TABLE(int) max_num_of_symbols() const
 {
 	return max_symbol_length;
 }
 
-template <int sentence_length, int max_symbol_length>
-CCM void cyk_table<sentence_length, max_symbol_length>::
-fill_cell(int row, int col, int** rules_table)
+CYK_TABLE(void) fill_cell(int row, int col, int** rules_table)
 {
 	for (int i = 0; i < row; ++i)
 	{
