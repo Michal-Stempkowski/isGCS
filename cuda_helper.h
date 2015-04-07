@@ -125,89 +125,25 @@ private:
 
 #define cuda_helper inner_cuda(AT)
 
-template <class T>
-void device_malloc(T **dev_handle, const char *localization, int size = sizeof(T))
-{
-	cudaError_t cudaStatus = cudaMalloc((void**)dev_handle, size);
-	if (cudaStatus != cudaSuccess) 
-	{
-		std::stringstream ss;
-		ss << "CudaMalloc  error (" << localization << ")!" << std::endl;
-
-		throw std::runtime_error(ss.str());
-	}
-}
-
-template <class T>
-void device_memcpy(T *dev_handle, const T *data, const char *localization, int size = sizeof(T))
-{
-	cudaError_t cudaStatus = cudaMemcpy(dev_handle, &data, size, cudaMemcpyHostToDevice);
-	if (cudaStatus != cudaSuccess) 
-	{
-		std::stringstream ss;
-		ss << "CudaMemcpy host --> device error (" << localization << ")!" << std::endl;
-
-		throw std::runtime_error(ss.str());
-	}
-}
-
 #define INNER_LAUNCH_KERNEL(kernel, x, y, ...) kernel << < x, y >> >(__VA_ARGS__)
 
-void check_for_errors_after_launch(const char *localization)
+template<class A, class B>
+void expect_eq_with_location(A a, B b, const char *at)
 {
-	cudaError_t cudaStatus = cudaGetLastError();
-	if (cudaStatus != cudaSuccess) 
-	{
-		std::stringstream ss;
-		ss << "addKernel launch failed: " << cudaGetErrorString(cudaStatus) << "(" << localization << ")" << std::endl;
+	const char margin[] = "===================================";
 
-		throw std::runtime_error(ss.str());
+	if (a != b)
+	{
+		std::cout << std::endl << margin << std::endl << 
+			"EXPECTATION FAILURE!" << std::endl <<
+			"left = " << a << ";" << std::endl <<
+			"right = " << b << ";" << std::endl <<
+			"left != right." << std::endl <<
+			"at: " << at << std::endl <<
+			margin << std::endl << std::endl;
 	}
 }
 
-
-void device_synchronize(const char *localization)
-{
-	cudaError_t cudaStatus = cudaDeviceSynchronize();
-	if (cudaStatus != cudaSuccess) 
-	{
-		std::stringstream ss;
-		ss << "cudaDeviceSynchronize returned error code " << cudaStatus << " after launching kernel (" << localization << ")!" << std::endl;
-
-		throw std::runtime_error(ss.str());
-	}
-}
-
-template <class T>
-void host_memcpy(T *data, T *dev_handle, const char *localization, int size = sizeof(T))
-{
-	cudaError_t cudaStatus = cudaMemcpy(data, dev_handle, size, cudaMemcpyDeviceToHost);
-	if (cudaStatus != cudaSuccess) 
-	{
-		std::stringstream ss;
-		ss << "CudaMemcpy device --> host error (" << localization << ")!" << std::endl;
-
-		throw std::runtime_error(ss.str());
-	}
-}
-
-//template <class T>
-//bool device_malloc(T **dev_handle, const char *localization)
-//{
-//	cudaError_t cudaStatus = cudaMalloc((void**)dev_handle, sizeof(T));
-//	if (cudaStatus != cudaSuccess) {
-//		std::cout << "CudaMalloc error (" << localization << ")!" << std::endl;
-//
-//		return false;
-//	}
-//
-//	return true;
-//
-//	/*cudaStatus = cudaMalloc((void**)&dev_table, sizeof(cyk_table<4, 10>));
-//	if (cudaStatus != cudaSuccess) {
-//	fprintf(stderr, "cudaMalloc failed on cyk_table!");
-//	goto Error;
-//	}*/
-//}
+#define expect_eq(a, b) expect_eq_with_location(a, b, AT)
 
 #endif

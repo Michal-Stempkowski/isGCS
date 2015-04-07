@@ -1,6 +1,8 @@
 #include "cuda_helper.h"
 #include "cyk_common.h"
 
+#include "cyk_rules_table.h"
+
 #ifndef CYK_TABLE_H
 #define CYK_TABLE_H
 
@@ -21,15 +23,19 @@ public:
 	{
 		for (int i = 0; i < sentence_length; ++i)
 		{
-			
+			assign_rule(0, i, sentence[i]);
 		}
 	}
 
-	CCM void fill_cell(int row, int col, int** rules_table);
+	CCM void fill_cell(int row, int col, cyk_rules_table<max_symbol_length> &rules_table);
+
+	CCM int get_cell_rule(int row, int col, int rule_number);
 
 private:
-	CCM void assign_rules_for_two_cell_combination(int offset, int current_row, int current_col, int** rules_table);
-	CCM void assign_rule_if_possible(int** rules_table, int left_symbol, int right_symbol, int current_row, int current_col);
+	CCM void assign_rules_for_two_cell_combination(int offset, int current_row, int current_col, 
+		cyk_rules_table<max_symbol_length> &rules_table);
+	CCM void assign_rule_if_possible(cyk_rules_table<max_symbol_length> &rules_table, 
+		int left_symbol, int right_symbol, int current_row, int current_col);
 	CCM void assign_rule(int row, int col, int rule);
 
 	enum special_field : int
@@ -45,13 +51,16 @@ private:
 
 CYK_TABLE(void) assign_rule(int row, int col, int rule)
 {
-	*last_symbol(row, col) = rule;
+	auto *ptr = last_symbol(row, col);
+	*ptr = rule;
+	//*last_symbol(row, col) = rule;
 	++table[row][col][special_field::symbol_count];
 }
 
-CYK_TABLE(void) assign_rule_if_possible(int** rules_table, int left_symbol, int right_symbol, int current_row, int current_col)
+CYK_TABLE(void) assign_rule_if_possible(cyk_rules_table<max_symbol_length> &rules_table, 
+	int left_symbol, int right_symbol, int current_row, int current_col)
 {
-	auto rule = rules_table[left_symbol][rightSymbol];
+	int rule = rules_table.get_rule_by_right_side(left_symbol, right_symbol);
 
 	if (rule != constants::NO_MATCHING_RULE)
 	{
@@ -59,7 +68,8 @@ CYK_TABLE(void) assign_rule_if_possible(int** rules_table, int left_symbol, int 
 	}
 }
 
-CYK_TABLE(void) assign_rules_for_two_cell_combination(int offset, int current_row, int current_col, int** rules_table)
+CYK_TABLE(void) assign_rules_for_two_cell_combination(int offset, int current_row, int current_col, 
+	cyk_rules_table<max_symbol_length> &rules_table)
 {
 	for (
 		int* left_symbol = first_symbol(offset, current_col);
@@ -118,12 +128,17 @@ CYK_TABLE(int) max_num_of_symbols() const
 	return max_symbol_length;
 }
 
-CYK_TABLE(void) fill_cell(int row, int col, int** rules_table)
+CYK_TABLE(void) fill_cell(int row, int col, cyk_rules_table<max_symbol_length> &rules_table)
 {
 	for (int i = 0; i < row; ++i)
 	{
 		assign_rules_for_two_cell_combination(i, row, col, rules_table);
 	}
+}
+
+CYK_TABLE(int) get_cell_rule(int row, int col, int rule_number)
+{
+	return table[row][col][special_field::enum_size + rule_number];
 }
 
 #endif

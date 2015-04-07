@@ -6,10 +6,13 @@
 #include <iostream>
 #include <vector>
 
+#include <cassert>
+
 #include "cuda_helper.h"
 
 #include "cyk_table.h"
 #include "cyk_rules_table.h"
+#include "device_memory.h"
 
 cudaError_t addWithCuda(int *c, const int *a, const int *b, unsigned int size);
 
@@ -53,16 +56,16 @@ int test_cyk_fill_cell()
 			NM,	NM,	NM,	NM,	NM	//0
 		},
 		{
-			NM, NM, NM, NM, NM	//1
+			NM, NM, 3, NM, NM	//1
 		},
 		{
-			NM, 3,	NM, NM, NM	//2
+			NM, NM,	NM, NM, NM	//2
 		},
 		{
-			NM, NM, NM, NM, NM	//3
+			NM, NM, NM, NM, 0	//3
 		},
 		{
-			NM, NM, NM,	0,	NM	//4
+			NM, NM, NM,	NM,	NM	//4
 		}
 	};
 
@@ -75,8 +78,13 @@ int test_cyk_fill_cell()
 
 	for (int i = 0; i < sentence_length - 1; ++i)
 	{
-		//cyk.fill_cell(1, i, rules_table);
+		cyk.fill_cell(1, i, rules);
 	}
+
+	expect_eq(cyk.get_cell_rule(0, 0, 0), 1);
+	expect_eq(cyk.get_cell_rule(0, 1, 0), 2);
+	expect_eq(cyk.get_cell_rule(1, 0, 0), 3);
+	expect_eq(cyk.get_cell_rule(1, 2, 0), 0);
 
 	return 0;
 }

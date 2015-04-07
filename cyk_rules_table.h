@@ -13,6 +13,8 @@ public:
 	cyk_rules_table(int (&rules_table)[max_rules_length][max_rules_length]);
 	CCM ~cyk_rules_table();
 
+	CCM int get_rule_by_right_side(int left_symbol, int right_symbol);
+
 private:
 	int rules[max_rules_length][max_rules_length];
 };
@@ -33,6 +35,11 @@ cyk_rules_table(int(&rules_table)[max_rules_length][max_rules_length])
 
 CYK_RULES_TABLE(NOTHING) ~cyk_rules_table()
 {
+}
+
+CYK_RULES_TABLE(int) get_rule_by_right_side(int left_symbol, int right_symbol)
+{
+	return rules[left_symbol][right_symbol];
 }
 
 #endif
