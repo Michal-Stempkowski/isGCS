@@ -17,6 +17,14 @@ public:
 
 	CCM int max_num_of_symbols() const;
 
+	void fill_first_row(int* sentence)
+	{
+		for (int i = 0; i < sentence_length; ++i)
+		{
+			
+		}
+	}
+
 	CCM void fill_cell(int row, int col, int** rules_table);
 
 private:

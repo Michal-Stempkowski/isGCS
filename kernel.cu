@@ -25,9 +25,65 @@ __global__ void cykKernel(int *c, cyk_table<4, 10>* table)
 	c[i] = table->size() + table->max_num_of_symbols();
 }
 
+template <int sentence_length, int max_symbol_length>
+__global__ void cyk2Kernel(cyk_table<sentence_length, max_symbol_length>* table)
+{
+	int index = threadIdx.x;
+
+	/*if (index < sentence_length)
+	{
+		table->fill_cell(index, index, )
+	}*/
+}
+
+int test_cyk_fill_cell()
+{
+	std::cout << "test_cyk_fill_cell" << std::endl;
+
+	const int max_symbol_count = 5;
+
+	cyk_table<4, max_symbol_count> cyk;
+
+	const auto NM = constants::NO_MATCHING_RULE;
+
+	int rules_table[max_symbol_count][max_symbol_count] =
+	{
+		//	0	1	2	3	4
+		{
+			NM,	NM,	NM,	NM,	NM	//0
+		},
+		{
+			NM, NM, NM, NM, NM	//1
+		},
+		{
+			NM, 3,	NM, NM, NM	//2
+		},
+		{
+			NM, NM, NM, NM, NM	//3
+		},
+		{
+			NM, NM, NM,	0,	NM	//4
+		}
+	};
+
+	cyk_rules_table<max_symbol_count> rules(rules_table);
+
+	const int sentence_length = 4;
+
+	int sentence[sentence_length] = { 1, 2, 3, 4 };
+	cyk.fill_first_row(sentence);
+
+	for (int i = 0; i < sentence_length - 1; ++i)
+	{
+		//cyk.fill_cell(1, i, rules_table);
+	}
+
+	return 0;
+}
+
 int test_cyk_second_row_filling()
 {
-	return 1;
+	return 0;
 }
 
 int test_cuda_basic()
@@ -67,6 +123,7 @@ int main()
 {
 	auto result = 
 		test_cuda_basic() ||
+		test_cyk_fill_cell() ||
 		test_cyk_second_row_filling();
 
 	std::cout << "enter to exit" << std::endl;
@@ -81,52 +138,46 @@ cudaError_t addWithCuda(int *c, const int *a, const int *b, unsigned int size)
     int *dev_a = 0;
     int *dev_b = 0;
     int *dev_c = 0;
-    cudaError_t cudaStatus;
 
 	cyk_table<4, 10>* dev_table = 0;
 
 	cyk_table<4, 10> table;
 
     // Choose which GPU to run on, change this on a multi-GPU system.
-    cudaStatus = cudaSetDevice(0);
+    /*cudaStatus = cudaSetDevice(0);
     if (cudaStatus != cudaSuccess) {
         fprintf(stderr, "cudaSetDevice failed!  Do you have a CUDA-capable GPU installed?");
         goto Error;
-    }
+    }*/
 
-	device_malloc<cyk_table<4, 10>>(&dev_table, AT);
-	device_memcpy<cyk_table<4, 10>>(dev_table, &table, AT);
+	try
+	{
+		cuda_helper.copy_to<cyk_table<4, 10>>(&dev_table, &table);
 
-	device_malloc<int>(&dev_a, AT, size * sizeof(int));
-	device_malloc<int>(&dev_b, AT, size * sizeof(int));
-	device_malloc<int>(&dev_c, AT, size * sizeof(int));
+		cuda_helper.copy_to<int>(&dev_a, a, size * sizeof(int));
+		cuda_helper.copy_to<int>(&dev_b, b, size * sizeof(int));
 
+		cuda_helper.device_malloc<int>(&dev_c, size * sizeof(int));
 
-    // Copy input vectors from host memory to GPU buffers.
+		cykKernel << < 1, size >> >(dev_c, dev_table);
 
-	device_memcpy<int>(dev_a, a, AT, size * sizeof(int));
-	device_memcpy<int>(dev_b, b, AT, size * sizeof(int));
+		cuda_helper.check_for_errors_after_launch();
 
-	cykKernel << < 1, size >> >(dev_c, dev_table);
+		cuda_helper.device_synchronize();
 
-	//INNER_LAUNCH_KERNEL(cykKernel, 1, size, dev_c, dev_table);
+		cuda_helper.copy_from(c, dev_c, size * sizeof(int));
 
-    // Check for any errors launching the kernel
-	check_for_errors_after_launch(AT);
+		std::cout << c[0] << std::endl;
+	}
+	catch (std::runtime_error &error)
+	{
+		std::cout << error.what() << std::endl;
+	}
+	
+	cuda_helper.free(dev_a);
+	cuda_helper.free(dev_a);
+	cuda_helper.free(dev_b);
+	cuda_helper.free(dev_table);
     
-    // cudaDeviceSynchronize waits for the kernel to finish, and returns
-    // any errors encountered during the launch.
-	device_synchronize(AT);
-
-    // Copy output vector from GPU buffer to host memory.
-	host_memcpy(c, dev_c, AT, size * sizeof(int));
-
-	std::cout << c[0] << std::endl;
-
-Error:
-    cudaFree(dev_c);
-    cudaFree(dev_a);
-    cudaFree(dev_b);
-    
-    return cudaStatus;
+	return cudaSuccess;
 }
