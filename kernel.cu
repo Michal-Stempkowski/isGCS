@@ -89,6 +89,19 @@ int test_cyk_fill_cell()
 	return 0;
 }
 
+int test_cuda_status()
+{
+	cudaDeviceProp deviceProp;
+	cudaGetDeviceProperties(&deviceProp, 0);
+
+	std::cout << deviceProp.major << "major" << std::endl <<
+		deviceProp.minor << "minor" << std::endl <<
+		deviceProp.sharedMemPerBlock << "sharedMemPerBlock" << std::endl <<
+		deviceProp.warpSize << "warpSize" << std::endl;
+
+	return 1;
+}
+
 int test_cyk_second_row_filling()
 {
 	return 0;
@@ -132,7 +145,8 @@ int main()
 	auto result = 
 		test_cuda_basic() ||
 		test_cyk_fill_cell() ||
-		test_cyk_second_row_filling();
+		test_cyk_second_row_filling() ||
+		test_cuda_status();
 
 	std::cout << "enter to exit" << std::endl;
 	std::cin.ignore();
