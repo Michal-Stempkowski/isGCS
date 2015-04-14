@@ -22,7 +22,7 @@ __global__ void addKernel(int *c, const int *a, const int *b)
     c[i] = a[i] + b[i];
 }
 
-__global__ void cykKernel(int *c, cyk_table<4, 10>* table)
+__global__ void cykKernelDemo(int *c, cyk_table<4, 10>* table)
 {
 	int i = threadIdx.x;
 	c[i] = table->size() + table->max_num_of_symbols();
@@ -78,7 +78,7 @@ int test_cyk_fill_cell()
 
 	for (int i = 0; i < sentence_length - 1; ++i)
 	{
-		cyk.fill_cell(1, i, rules);
+		cyk.fill_cell(1, i, &rules);
 	}
 
 	expect_eq(cyk.get_cell_rule(0, 0, 0), 1);
@@ -99,11 +99,121 @@ int test_cuda_status()
 		deviceProp.sharedMemPerBlock << "sharedMemPerBlock" << std::endl <<
 		deviceProp.warpSize << "warpSize" << std::endl;
 
-	return 1;
+	return 0;
 }
 
 int test_cyk_second_row_filling()
 {
+	return 0;
+}
+
+template <int sentence_length, int max_symbol_length, int num_of_blocks, int num_of_threads>
+__global__ void cyk_kernel(
+	preferences<sentence_length, max_symbol_length, num_of_blocks, num_of_threads>** all_prefs,
+	cyk_table<sentence_length, max_symbol_length>** all_tables,
+	cyk_rules_table<max_symbol_length>** all_rules_tables)
+{
+	preferences<sentence_length, max_symbol_length, num_of_blocks, num_of_threads>* prefs = device_memory.get_object(all_prefs);
+	cyk_table<sentence_length, max_symbol_length>* cyk = device_memory.get_object(all_tables);
+	cyk_rules_table<max_symbol_length>* rules = device_memory.get_object(all_rules_tables);
+
+	int job_id = threadIdx.x;
+
+	int current_row = device_memory.get_current_cyk_row(job_id, all_prefs);
+	int current_col = device_memory.get_current_cyk_col(job_id, all_prefs);
+
+	for (int i = 0; i < sentence_length; ++i)
+	{
+		if (current_col != device_memory.INVALID_LOCATION && current_row != device_memory.INVALID_LOCATION)
+		{
+			cyk->fill_cell(current_row, current_col, rules);
+		}
+
+		__syncthreads();
+	}
+}
+
+//template __global__ void ker<true>();
+
+int test_main_kernel()
+{
+	const int sentence_length = 16;
+	const int max_symbol_length = 32;
+	const int num_of_blocks = 3;
+	const int num_of_threads = 32;
+
+	using preferences_t = preferences < sentence_length, max_symbol_length, num_of_blocks, num_of_threads >;
+	preferences_t* dev_prefs = nullptr;
+	preferences_t prefs[num_of_blocks];
+
+	using cyk_table_t = cyk_table < sentence_length, max_symbol_length > ;
+	cyk_table_t* dev_table = nullptr;
+	cyk_table_t table[num_of_blocks];
+
+	const auto NM = constants::NO_MATCHING_RULE;
+
+	int rules_table[max_symbol_length][max_symbol_length] =
+	{
+		//	0	1	2	3	4
+		{
+			NM, NM, NM, NM, NM	//0
+		},
+		{
+			NM, NM, 3, NM, NM	//1
+		},
+		{
+			NM, NM, NM, NM, NM	//2
+		},
+		{
+			NM, NM, NM, NM, 0	//3
+		},
+		{
+			NM, NM, NM, NM, NM	//4
+		}
+	};
+
+	using cyk_rules_table_t = cyk_rules_table < max_symbol_length > ;
+	cyk_rules_table_t* dev_rules = nullptr;
+	cyk_rules_table_t rules[num_of_blocks] = {
+			{ rules_table },
+			{ rules_table },
+			{ rules_table }
+	};
+
+	try
+	{
+		cuda_helper.copy_to<preferences_t>(&dev_prefs, prefs, num_of_blocks * sizeof(preferences_t));
+		cuda_helper.copy_to<cyk_table_t>(&dev_table, table, num_of_blocks * sizeof(cyk_table_t));
+		cuda_helper.copy_to<cyk_rules_table_t>(&dev_rules, rules, num_of_blocks * sizeof(cyk_rules_table_t));
+
+		cyk_kernel
+			<sentence_length, max_symbol_length, num_of_blocks, num_of_threads> 
+			<< <num_of_blocks, num_of_threads >> >(
+			&dev_prefs, &dev_table, &dev_rules);
+
+		cuda_helper.check_for_errors_after_launch();
+
+		cuda_helper.device_synchronize();
+
+		cuda_helper.copy_from(table, dev_table, num_of_blocks * sizeof(cyk_table_t));
+		cuda_helper.copy_from(rules, dev_rules, num_of_blocks * sizeof(cyk_rules_table_t));
+
+		std::cout << "Works!" << std::endl;
+	}
+	catch (std::runtime_error &error)
+	{
+		std::cout << error.what() << std::endl;
+	}
+
+	cuda_helper.free(dev_prefs);
+	cuda_helper.free(dev_table);
+	cuda_helper.free(dev_rules);
+
+	/*cuda_helper.free(dev_a);
+	cuda_helper.free(dev_a);
+	cuda_helper.free(dev_b);
+	cuda_helper.free(dev_table);*/
+
 	return 0;
 }
 
@@ -142,11 +252,12 @@ int test_cuda_basic()
 
 int main()
 {
-	auto result = 
+	auto result =
 		test_cuda_basic() ||
 		test_cyk_fill_cell() ||
 		test_cyk_second_row_filling() ||
-		test_cuda_status();
+		test_cuda_status() ||
+		test_main_kernel();
 
 	std::cout << "enter to exit" << std::endl;
 	std::cin.ignore();
@@ -181,7 +292,7 @@ cudaError_t addWithCuda(int *c, const int *a, const int *b, unsigned int size)
 
 		cuda_helper.device_malloc<int>(&dev_c, size * sizeof(int));
 
-		cykKernel << < 1, size >> >(dev_c, dev_table);
+		cykKernelDemo << < 1, size >> >(dev_c, dev_table);
 
 		cuda_helper.check_for_errors_after_launch();
 
@@ -197,8 +308,8 @@ cudaError_t addWithCuda(int *c, const int *a, const int *b, unsigned int size)
 	}
 	
 	cuda_helper.free(dev_a);
-	cuda_helper.free(dev_a);
 	cuda_helper.free(dev_b);
+	cuda_helper.free(dev_c);
 	cuda_helper.free(dev_table);
     
 	return cudaSuccess;
