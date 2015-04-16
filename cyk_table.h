@@ -17,6 +17,10 @@ public:
 	CCM int* first_symbol(int row, int col);
 	CCM int* last_symbol(int row, int col);
 
+	CCM int get_symbol_at(int row, int col, int pos);
+	CCM void set_symbol_at(int row, int col, int pos, int value);
+	CCM int get_symbol_count(int row, int col);
+
 	CCM int max_num_of_symbols() const;
 
 	void fill_first_row(int* sentence)
@@ -51,10 +55,11 @@ private:
 
 CYK_TABLE(void) assign_rule(int row, int col, int rule)
 {
-	auto *ptr = last_symbol(row, col);
-	*ptr = rule;
-	//*last_symbol(row, col) = rule;
-	++table[row][col][special_field::symbol_count];
+	//get_symbol_at(1, 1, 1);
+	//set_symbol_at(row, col, get_symbol_count(row, col), rule);
+	//set_symbol_at(0, 0, 0, 0);
+	table[0][0][1] = 0;
+	//++table[row][col][special_field::symbol_count];
 }
 
 CYK_TABLE(void) assign_rule_if_possible(cyk_rules_table<max_symbol_length> *rules_table, 
@@ -71,21 +76,18 @@ CYK_TABLE(void) assign_rule_if_possible(cyk_rules_table<max_symbol_length> *rule
 CYK_TABLE(void) assign_rules_for_two_cell_combination(int offset, int current_row, int current_col, 
 	cyk_rules_table<max_symbol_length> *rules_table)
 {
-	for (
-		int* left_symbol = first_symbol(offset, current_col);
-		left_symbol != last_symbol(offset, current_col);
-	++left_symbol)
+	for (int i = 0; i < get_symbol_count(offset, current_col); ++i)
 	{
-		/*int right_symbol_row = current_row - (offset + 1);
+		int left_symbol = get_symbol_at(offset, current_col, i);
+		int right_symbol_row = current_row - (offset + 1);
 		int right_symbol_col = current_col + (offset + 1);
 
-		for (
-			int* rightSymbol = first_symbol(right_symbol_row, right_symbol_col);
-			rightSymbol != last_symbol(right_symbol_row, right_symbol_col);
-		++rightSymbol)
+		for (int j = 0; j < get_symbol_count(right_symbol_row, right_symbol_col); ++j)
 		{
-			assign_rule_if_possible(rules_table, *left_symbol, *rightSymbol, current_row, current_col);
-		}*/
+			int right_symbol = get_symbol_at(right_symbol_row, right_symbol_col, j);
+
+			assign_rule_if_possible(rules_table, left_symbol, right_symbol, current_row, current_col);
+		}
 	}
 }
 
@@ -120,7 +122,22 @@ CYK_TABLE(int*) first_symbol(int row, int col)
 
 CYK_TABLE(int*) last_symbol(int row, int col)
 {
-	return table[row][col] + special_field::enum_size + table[row][col][special_field::symbol_count];
+	return first_symbol(row, col) + table[row][col][special_field::symbol_count];
+}
+
+CYK_TABLE(int) get_symbol_at(int row, int col, int pos)
+{
+	return table[row][col][special_field::enum_size + pos];
+}
+
+CYK_TABLE(void) set_symbol_at(int row, int col, int pos, int value)
+{
+	table[row][col][special_field::enum_size + pos] = value;
+}
+
+CYK_TABLE(int) get_symbol_count(int row, int col)
+{
+	return table[row][col][special_field::symbol_count];
 }
 
 CYK_TABLE(int) max_num_of_symbols() const
