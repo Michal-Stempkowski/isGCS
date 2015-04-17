@@ -1,43 +1,34 @@
-
+#include "cuda_helper.h"
 
 #if !defined(PREFERENCES_H)
 #define PREFERENCES_H
 
-template <int sentence_length, int max_symbol_length, int num_of_blocks, int num_of_threads>
 class preferences
 {
 public:
-	preferences()
+	enum option : int
 	{
-	}
+		sentence_length,
+		max_alphabet_size,
+		max_symbols_in_cell,
+		number_of_blocks,
+		number_of_threads,
+		enum_size	// DO NOT use it as enum, it represents size of this enum
+	};
 
-	~preferences()
-	{
-	}
+	static const int invalid_value = -1;
 
-	int get_sentence_length() 
-	{
-		return sentence_length;
-	}
+	CCM preferences(const int block_id, const char* source_code_localization_);
 
-	int get_max_symbol_length() 
-	{
-		return max_symbol_length;
-	}
+	CCM int get(int *preferences, option opt);
 
-	int get_num_of_blocks() 
-	{
-		return num_of_blocks;
-	}
-
-	int get_num_of_threads() 
-	{
-		return num_of_threads;
-	}
+	CCM ~preferences();
 
 private:
+	CCM int get_index(int field_id);
 
+	const int block_id;
+	const char* source_code_localization;
 };
-
 
 #endif

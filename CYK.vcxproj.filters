@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CudaCompile Include="kernel.cu" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="tests">
+      <UniqueIdentifier>{515d80f3-ff3e-44bf-9a08-4450bc88bffc}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="test_cuda_misc.h">
+      <Filter>tests</Filter>
+    </ClInclude>
+    <ClInclude Include="test_cyk_kernel.h">
+      <Filter>tests</Filter>
+    </ClInclude>
+    <ClInclude Include="device_memory.h" />
+    <ClInclude Include="preferences.h" />
+    <ClInclude Include="cuda_array.h" />
+    <ClInclude Include="cuda_helper.h" />
+    <ClInclude Include="cyk_common.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="test_cyk_kernel.cpp">
+      <Filter>tests</Filter>
+    </ClCompile>
+    <ClCompile Include="cuda_helper.cpp" />
+    <ClCompile Include="preferences.cpp" />
+  </ItemGroup>
+</Project>
