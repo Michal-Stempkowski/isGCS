@@ -6,7 +6,7 @@ source_code_localization(source_code_localization_), block_id(block_id_)
 
 }
 
-CCM int preferences::get(int *preferences, option opt)
+CCM int preferences::get(int *preferences, option opt) const
 {
 	if (opt < 0 || opt >= enum_size)
 	{
@@ -20,7 +20,7 @@ CCM preferences::~preferences()
 {
 }
 
-CCM int preferences::get_index(int field_id)
+CCM int preferences::get_index(int field_id) const
 {
 	return block_id * enum_size + field_id;
 }

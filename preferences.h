@@ -20,12 +20,12 @@ public:
 
 	CCM preferences(const int block_id, const char* source_code_localization_);
 
-	CCM int get(int *preferences, option opt);
+	CCM int get(int *preferences, option opt) const;
 
 	CCM ~preferences();
 
 private:
-	CCM int get_index(int field_id);
+	CCM int get_index(int field_id) const;
 
 	const int block_id;
 	const char* source_code_localization;
