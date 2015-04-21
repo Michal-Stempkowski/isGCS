@@ -12,6 +12,7 @@ int main()
 	{
 		test_header("test_cuda_status"), test_cuda_status();
 		test_header("test_cyk_kernel"), test_cyk_kernel();
+		test_header("test_cuda_index_calculation"), test_cuda_index_calculation();
 	}
 	catch (std::runtime_error &error)
 	{

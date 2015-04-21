@@ -18,4 +18,22 @@ void test_cuda_status()
 	expect_eq(true, true, AT);
 }
 
+void test_cuda_index_calculation()
+{
+	expect_eq(index_out_of_bounds, generate_absolute_index(0, 0), AT);
+	expect_eq(5, generate_absolute_index(5, 8), AT);
+	expect_eq(4, generate_absolute_index(0, 2, 4, 5), AT);
+	expect_eq(14, generate_absolute_index(2, 7, 4, 5), AT);
+	expect_eq(15, generate_absolute_index(
+		1, 2, 
+		1, 2, 
+		1, 2, 
+		1, 2), AT);
+	expect_eq(index_out_of_bounds, generate_absolute_index(
+		2, 0,
+		2, 2,
+		2, 2,
+		2, 2), AT);
+}
+
 #endif

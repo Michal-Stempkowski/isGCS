@@ -3,6 +3,7 @@
 
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
+#include <cstdarg>
 
 #if !defined(CUDA_HELPER_H)
 #define CUDA_HELPER_H
@@ -139,6 +140,20 @@ public:
 private:
 	const char* source_code_localization;
 };
+
+enum error : int
+{
+	no_errors_occured = 0,
+	index_out_of_bounds = -1
+};
+
+CCM int generate_absolute_index(int x, int x_max);
+CCM int generate_absolute_index(int x, int x_max, int y, int y_max);
+CCM int generate_absolute_index(int x, int x_max, int y, int y_max, int z, int z_max);
+CCM int generate_absolute_index(int x, int x_max, int y, int y_max, int z, int z_max, int i, int i_max);
+
+CCM int table_get(int* table, int absolute_index);
+CCM int table_set(int* table, int absolute_index, int value);
 
 //
 //#define INNER_LAUNCH_KERNEL(kernel, x, y, ...) kernel << < x, y >> >(__VA_ARGS__)
