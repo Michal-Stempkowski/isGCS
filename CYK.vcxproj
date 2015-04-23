@@ -164,14 +164,9 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     <ClInclude Include="cyk_table.h" />
     <ClInclude Include="device_memory.h" />
     <ClInclude Include="preferences.h" />
+    <ClInclude Include="test_copy_kernel.h" />
     <ClInclude Include="test_cuda_misc.h" />
     <ClInclude Include="test_cyk_kernel.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="cuda_helper.cpp" />
-    <ClCompile Include="cyk_table.cpp" />
-    <ClCompile Include="preferences.cpp" />
-    <ClCompile Include="test_cyk_kernel.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

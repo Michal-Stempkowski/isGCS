@@ -5,6 +5,16 @@
 #include "device_launch_parameters.h"
 #include <cstdarg>
 
+#if !defined CUDA_DEBUG
+#define CUDA_DEBUG 1
+#endif
+
+#if CUDA_DEBUG
+#define log_debug(...) printf(__VA_ARGS__)
+#else
+#define log_debug(...)
+#endif
+
 #if !defined(CUDA_HELPER_H)
 #define CUDA_HELPER_H
 
@@ -37,6 +47,25 @@ void expect_eq(A a, B b, const char *at)
 	}
 }
 
+template<class A, class B>
+void expect_table_eq(A a, B b, int size, const char *at)
+{
+	for (int i = 0; i < size; ++i)
+	{
+		if (a[i] != b[i])
+		{
+			std::cout << std::endl << error << std::endl <<
+				"EXPECTATION FAILURE!" << std::endl <<
+				"tables differ at: " << i <<std::endl <<
+				"left = " << a[i] << ";" << std::endl <<
+				"right = " << b[i] << ";" << std::endl <<
+				"left != right." << std::endl <<
+				"at: " << at << std::endl <<
+				error << std::endl << std::endl;
+		}
+	}
+}
+
 class cuda_helper
 {
 public:
@@ -47,10 +76,11 @@ public:
 	}
 
 	template <class T>
-	void device_malloc(T **dev_handle, int size)
+	void allocate_on_device(T** dev_ptr, T size)
 	{
-		cudaError_t cudaStatus = cudaMalloc((void**)dev_handle, size * sizeof(T));
-		if (cudaStatus != cudaSuccess)
+		cudaError_t cuda_status = cudaMalloc(dev_ptr, size * sizeof(T));
+
+		if (cuda_status != cudaSuccess)
 		{
 			std::stringstream ss;
 			ss << "CudaMalloc  error (" << source_code_localization << ")!" << std::endl;
@@ -60,10 +90,11 @@ public:
 	}
 
 	template <class T>
-	void device_memcpy(T *dev_handle, const T *data, int size)
+	void to_device(T* dev_ptr, const T* src, T size)
 	{
-		cudaError_t cudaStatus = cudaMemcpy(dev_handle, &data, size * sizeof(T), cudaMemcpyHostToDevice);
-		if (cudaStatus != cudaSuccess)
+		cudaError_t cuda_status = cudaMemcpy(dev_ptr, src, size * sizeof(T), cudaMemcpyHostToDevice);
+
+		if (cuda_status != cudaSuccess)
 		{
 			std::stringstream ss;
 			ss << "CudaMemcpy host --> device error (" << source_code_localization << ")!" << std::endl;
@@ -73,14 +104,14 @@ public:
 	}
 
 	template <class T>
-	void copy_to(T **dev_handle, const T *data, int size)
+	void from_host_to_device(T** dev_ptr, const T* src, T size)
 	{
-		if (*dev_handle == nullptr)
+		if (*dev_ptr == nullptr)
 		{
-			device_malloc(dev_handle, size);
+			allocate_on_device(dev_ptr, size);
 		}
 
-		device_memcpy(*dev_handle, data, size);
+		to_device(*dev_ptr, src, size);
 	}
 
 	void check_for_errors_after_launch()
@@ -122,7 +153,7 @@ public:
 	}
 
 	template <class T>
-	void copy_from(T *data, T *dev_handle, int size)
+	void from_device_to_host(T *data, T *dev_handle, int size)
 	{
 		host_memcpy<T>(data, dev_handle, size);
 	}
@@ -155,26 +186,80 @@ CCM int generate_absolute_index(int x, int x_max, int y, int y_max, int z, int z
 CCM int table_get(int* table, int absolute_index);
 CCM int table_set(int* table, int absolute_index, int value);
 
-//
-//#define INNER_LAUNCH_KERNEL(kernel, x, y, ...) kernel << < x, y >> >(__VA_ARGS__)
-//
-//template<class A, class B>
-//void expect_eq_with_location(A a, B b, const char *at)
+const char margin[] = "\n-----------------------------------\n";
+const char margin_lined[] = "\n===================================\n";
+const char error[] = "+++++++++++++++++++++++++++++++++++";
+
+void test_header(const char* name)
+{
+	std::cout << "+++" << name << std::endl;
+}
+
+//static bool bounds(int a, int max_a)
 //{
-//	const char margin[] = "===================================";
-//
-//	if (a != b)
-//	{
-//		std::cout << std::endl << margin << std::endl <<
-//			"EXPECTATION FAILURE!" << std::endl <<
-//			"left = " << a << ";" << std::endl <<
-//			"right = " << b << ";" << std::endl <<
-//			"left != right." << std::endl <<
-//			"at: " << at << std::endl <<
-//			margin << std::endl << std::endl;
-//	}
+//	return 
 //}
-//
-//#define expect_eq(a, b) expect_eq_with_location(a, b, AT)
+
+static CCM int apply_param(int a, int a_max, int index)
+{
+	if (a < 0 || a >= a_max)
+	{
+		return error::index_out_of_bounds;
+	}
+
+	if (index != error::index_out_of_bounds)
+	{
+		index = index * a_max + a;
+	}
+
+	return index;
+}
+
+CCM int generate_absolute_index(int x, int x_max)
+{
+	return apply_param(x, x_max, 0);
+}
+
+CCM int generate_absolute_index(int x, int x_max, int y, int y_max)
+{
+	return apply_param(y, y_max, generate_absolute_index(x, x_max));
+}
+
+CCM int generate_absolute_index(int x, int x_max, int y, int y_max, int z, int z_max)
+{
+	return apply_param(z, z_max, generate_absolute_index(x, x_max, y, y_max));
+}
+
+CCM int generate_absolute_index(int x, int x_max, int y, int y_max, int z, int z_max, int i, int i_max)
+{
+	return apply_param(i, i_max, generate_absolute_index(x, x_max, y, y_max, z, z_max));
+}
+
+CCM int table_get(int* table, int absolute_index)
+{
+	return
+		absolute_index >= error::no_errors_occured ?
+		table[absolute_index] :
+		absolute_index;
+}
+
+CCM int table_set(int* table, int absolute_index, int value)
+{
+	return absolute_index >= error::no_errors_occured ?
+		table[absolute_index] = value, error::no_errors_occured :
+		absolute_index;
+}
+
+template <class T>
+CCM T min(T a, T b)
+{
+	return a < b ? a : b;
+}
+
+template <class T>
+CCM T max(T a, T b)
+{
+	return a > b ? a : b;
+}
 
 #endif
