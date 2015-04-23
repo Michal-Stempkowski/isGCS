@@ -1,9 +1,7 @@
 #include "test_cuda_misc.h"
 #include "test_copy_kernel.h"
 #include "test_cyk_kernel.h"
-#include "cuda_helper.h"
-
-#include "device_memory.h"
+#include "cuda_all_helpers.h"
 
 
 

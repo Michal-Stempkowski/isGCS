@@ -158,11 +158,14 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     <CudaCompile Include="kernel.cu" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="cuda_array.h" />
-    <ClInclude Include="cuda_helper.h" />
+    <ClInclude Include="cuda_debug.h" />
+    <ClInclude Include="cuda_error.h" />
+    <ClInclude Include="cuda_all_helpers.h" />
+    <ClInclude Include="cuda_helper_common.h" />
+    <ClInclude Include="cuda_table_helper.h" />
     <ClInclude Include="cyk_common.h" />
     <ClInclude Include="cyk_table.h" />
-    <ClInclude Include="device_memory.h" />
+    <ClInclude Include="cuda_helper.h" />
     <ClInclude Include="preferences.h" />
     <ClInclude Include="test_copy_kernel.h" />
     <ClInclude Include="test_cuda_misc.h" />

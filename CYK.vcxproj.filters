@@ -7,15 +7,15 @@
     <Filter Include="tests">
       <UniqueIdentifier>{515d80f3-ff3e-44bf-9a08-4450bc88bffc}</UniqueIdentifier>
     </Filter>
+    <Filter Include="cuda_helpers">
+      <UniqueIdentifier>{600b6c66-1a6c-492d-ba88-4d7f471838ee}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="test_cuda_misc.h">
       <Filter>tests</Filter>
     </ClInclude>
-    <ClInclude Include="device_memory.h" />
     <ClInclude Include="preferences.h" />
-    <ClInclude Include="cuda_array.h" />
-    <ClInclude Include="cuda_helper.h" />
     <ClInclude Include="cyk_common.h" />
     <ClInclude Include="cyk_table.h" />
     <ClInclude Include="test_cyk_kernel.h">
@@ -23,6 +23,24 @@
     </ClInclude>
     <ClInclude Include="test_copy_kernel.h">
       <Filter>tests</Filter>
+    </ClInclude>
+    <ClInclude Include="cuda_debug.h">
+      <Filter>cuda_helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="cuda_error.h">
+      <Filter>cuda_helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="cuda_table_helper.h">
+      <Filter>cuda_helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="cuda_helper_common.h">
+      <Filter>cuda_helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="cuda_helper.h">
+      <Filter>cuda_helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="cuda_all_helpers.h">
+      <Filter>cuda_helpers</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
